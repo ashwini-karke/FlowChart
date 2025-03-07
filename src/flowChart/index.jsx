@@ -19,17 +19,39 @@ import {
   Typography,
   Button,
   TextField,
+  Paper,
+  InputLabel,
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
-  Checkbox,
-  FormControlLabel,
-  Paper,
+  IconButton,
 } from "@mui/material";
+import {
+  FormatSize,
+  TextFormat,
+  FormatBold,
+  FormatItalic,
+  Palette,
+  Delete,
+} from "@mui/icons-material";
+import FormatColorTextIcon from "@mui/icons-material/FormatColorText";
+import FormatColorFillIcon from "@mui/icons-material/FormatColorFill";
+import FontDownloadIcon from "@mui/icons-material/FontDownload";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 const CustomNode = ({ id, data, selected }) => {
-  const { label, color } = data;
+  const {
+    label,
+    bgColor,
+    fontSize,
+    fontWeight,
+    fontStyle,
+    fontFamily,
+    fontColor,
+  } = data;
 
   const nodeDimensions = useStore((store) => {
     const node = store.nodeInternals.get(id);
@@ -44,13 +66,13 @@ const CustomNode = ({ id, data, selected }) => {
       style={{
         width: nodeSize.width,
         height: nodeSize.height,
-        background: color || "#90EE90", // Default blue
-        borderRadius: "5px",
+        background: bgColor || "#D3D3D3", // Default blue
+        borderRadius: "6px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        border: "1px solid #333",
+        border: "1px solid #ccc",
         boxShadow: "2px 2px 4px rgba(0, 0, 0, 0.2)",
         position: "relative",
         fontSize: "8px",
@@ -70,24 +92,6 @@ const CustomNode = ({ id, data, selected }) => {
           }}
         />
       )}
-      {/* Node Type Label */}
-      {/* <div
-        style={{
-          position: "absolute",
-          top: "3px",
-          left: "3px",
-          background: "#000",
-          color: "#FFF",
-          padding: "2px 6px",
-          borderRadius: "2px",
-          fontSize: "6px",
-          fontWeight: "bold",
-        }}
-      >
-        {nodeTypeLabel}
-      </div> */}
-
-      {/* Main Label */}
       <div
         style={{
           display: "flex",
@@ -103,8 +107,11 @@ const CustomNode = ({ id, data, selected }) => {
           textAlign: "center",
           msOverflowStyle: "none", // Hide scrollbar in IE and Edge
           scrollbarWidth: "none", // Hide scrollbar in Firefox
-          color: "#242424",
-          fontSize: "8px",
+          color: fontColor || "#242424",
+          fontSize: fontSize || "8px",
+          fontWeight: fontWeight || "normal",
+          fontStyle: fontStyle || "normal",
+          fontFamily: fontFamily || "Arial",
         }}
       >
         {label}
@@ -119,45 +126,9 @@ const CustomNode = ({ id, data, selected }) => {
 
 const nodeTypes = { custom: CustomNode };
 
-const initialNodes = [
-  // {
-  //   id: "1",
-  //   type: "custom",
-  //   data: { label: "Login", shape: "circle", color: "#ADD8E6" },
-  //   // position: { x: 250, y: 50 },
-  // },
-  // {
-  //   id: "2",
-  //   type: "custom",
-  //   data: { label: "Check Credentials", shape: "diamond", color: "#90EE90" },
-  //   // position: { x: 250, y: 150 },
-  // },
-  // {
-  //   id: "3",
-  //   type: "custom",
-  //   data: { label: "Dashboard", shape: "rectangle", color: "#D3D3D3" },
-  //   // position: { x: 100, y: 250 },
-  // },
-  // {
-  //   id: "4",
-  //   type: "custom",
-  //   data: { label: "Error Message", shape: "rectangle", color: "#FFA500" },
-  //   // position: { x: 400, y: 250 },
-  // },
-  // {
-  //   id: "5",
-  //   type: "custom",
-  //   data: { label: "End", shape: "circle", color: "#FF0000" },
-  //   // position: { x: 250, y: 350 },
-  // },
-];
+const initialNodes = [];
 
-const initialEdges = [
-  // { id: "e1-2", source: "1", target: "2", label: "Submit", animated: true },
-  // { id: "e2-3", source: "2", target: "3", label: "Valid" },
-  // { id: "e2-4", source: "2", target: "4", label: "Invalid" },
-  // { id: "e3-5", source: "3", target: "5", label: "Logout", animated: true },
-];
+const initialEdges = [];
 
 function getNodeHierarchy(nodes, edges) {
   const hierarchy = {};
@@ -222,19 +193,100 @@ console.log(nodesWithPositions);
 const FlowChart = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithPositions);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedEdge, setSelectedEdge] = useState(null);
+  const [selectedNode, setSelectedNode] = useState([]);
+  const [selectedEdge, setSelectedEdge] = useState([]);
   const [nodeLabel, setNodeLabel] = useState("");
-  const [nodeShape, setNodeShape] = useState("rectangle");
   const [edgeLabel, setEdgeLabel] = useState("");
-  const [nodeColor, setNodeColor] = useState("#cccccc");
+  const [nodeColor, setNodeColor] = useState("#D3D3D3");
   const [edgeAnimated, setEdgeAnimated] = useState(false);
+  const [nodeFontStyle, setNodeFontStyle] = useState({
+    fontSize: "12px",
+    fontWeight: "normal",
+    fontStyle: "",
+    fontFamily: "Arial",
+    fontColor: "#ccc",
+    bgColor: "#D3D3D3",
+  });
+
+  const [edgeFontStyle, setEdgeFontStyle] = useState({
+    fontSize: "12px",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    fontFamily: "Arial",
+  });
+  const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+
+  const handleNodeStyleChange = (property, value) => {
+    console.log(value, "value");
+    if (!selectedNode || selectedNode.length === 0) return;
+
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        selectedNode.some((n) => n.id === node.id)
+          ? { ...node, data: { ...node.data, [property]: value } }
+          : node
+      )
+    );
+
+    // Update labels for selected nodes
+    if (property === "label") {
+      setNodeLabel(value); // Store full value instead of appending character by character
+    }
+  };
+
+  //--------------------Undo-Redo--------------
+  // Function to update history before making changes
+  const saveState = () => {
+    setHistory((prev) => [...prev, { nodes, edges }]);
+    setRedoStack([]); // Clear redo stack on new action
+  };
+
+  // Undo function
+  const undo = () => {
+    if (history.length === 0) return;
+
+    const lastState = history[history.length - 1];
+    setRedoStack((prev) => [...prev, { nodes, edges }]); // Save current state to redoStack
+    setNodes(lastState.nodes);
+    setEdges(lastState.edges);
+    setHistory((prev) => prev.slice(0, -1)); // Remove last state
+  };
+
+  // Redo function
+  const redo = () => {
+    if (redoStack.length === 0) return;
+
+    const nextState = redoStack[redoStack.length - 1];
+    setHistory((prev) => [...prev, { nodes, edges }]); // Save current state to history
+    setNodes(nextState.nodes);
+    setEdges(nextState.edges);
+    setRedoStack((prev) => prev.slice(0, -1)); // Remove last state
+  };
+
+  // Override functions to track changes
+  const onNodesChangeWithHistory = (changes) => {
+    saveState();
+    onNodesChange(changes);
+  };
+
+  const onEdgesChangeWithHistory = (changes) => {
+    saveState();
+    onEdgesChange(changes);
+  };
+
+  const onConnectWithHistory = (params) => {
+    saveState();
+    setEdges((eds) => addEdge({ ...params, label: "" }, eds));
+  };
+  //--------------------------------
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge({ ...params, label: "" }, eds)),
     [setEdges]
   );
   const addNode = () => {
+    saveState();
     const position = { x: event.clientX - 450, y: event.clientY - 100 };
     const newNode = {
       id: (nodes.length + 1).toString(),
@@ -249,39 +301,67 @@ const FlowChart = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
+  // const onNodeClick = (_, node) => {
+  //   setSelectedNode(node);
+  //   setNodeLabel(node.data.label);
+  //   setNodeColor(node.data.color);
+  //   setSelectedEdge(null);
+  // };
+
   const onNodeClick = (_, node) => {
-    setSelectedNode(node);
-    setNodeLabel(node.data.label);
-    setNodeShape(node.data.shape);
-    setNodeColor(node.data.color);
-    setSelectedEdge(null);
+    setSelectedNode((prevSelected) => {
+      const isAlreadySelected = prevSelected.some((n) => n.id === node.id);
+
+      return isAlreadySelected
+        ? prevSelected // Keep it unchanged if already selected
+        : [...prevSelected, node]; // Append new selection
+    });
+
+    setSelectedEdge([]); // Clear edge selection when selecting nodes
   };
+
+  // const onEdgeClick = (_, edge) => {
+  //   setSelectedEdge(edge);
+  //   setEdgeLabel(edge.label || "");
+  //   setEdgeAnimated(edge.animated || false);
+  //   setSelectedNode(null);
+  // };
 
   const onEdgeClick = (_, edge) => {
-    setSelectedEdge(edge);
+    setSelectedEdge((prevSelected) => {
+      const isAlreadySelected = prevSelected.some((e) => e.id === edge.id);
+
+      return isAlreadySelected
+        ? prevSelected // Keep it unchanged if already selected
+        : [...prevSelected, edge]; // Append new selection
+    });
+
     setEdgeLabel(edge.label || "");
     setEdgeAnimated(edge.animated || false);
-    setSelectedNode(null);
+    setSelectedNode([]); // Clear node selection when selecting edges
   };
 
-  const applyNodeChanges = () => {
-    if (!selectedNode) return;
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === selectedNode.id
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                label: nodeLabel,
-                // shape: nodeShape,
-                color: nodeColor,
-              },
-            }
-          : node
-      )
-    );
-    setSelectedNode(null);
+  const onPaneClick = () => {
+    setSelectedNode([]);
+    setSelectedEdge([]);
+    setNodeLabel("");
+    setEdgeLabel("");
+  };
+
+  const handleEdgeLabelChange = (event) => {
+    saveState();
+    const newLabel = event.target.value;
+    setEdgeLabel(newLabel);
+
+    if (selectedEdge.length > 0) {
+      setEdges((eds) =>
+        eds.map((edge) =>
+          selectedEdge.some((e) => e.id === edge.id)
+            ? { ...edge, label: newLabel }
+            : edge
+        )
+      );
+    }
   };
 
   const applyEdgeChanges = () => {
@@ -293,48 +373,63 @@ const FlowChart = () => {
           : edge
       )
     );
-    setSelectedEdge(null);
+    setSelectedEdge([]);
   };
 
   const deleteNode = () => {
-    if (!selectedNode) return;
-    setNodes((nds) => nds.filter((node) => node.id !== selectedNode.id));
+    if (!selectedNode || selectedNode.length === 0) return;
+
+    const selectedNodeIds = selectedNode.map((node) => node.id);
+
+    setNodes((nds) => nds.filter((node) => !selectedNodeIds.includes(node.id)));
     setEdges((eds) =>
       eds.filter(
         (edge) =>
-          edge.source !== selectedNode.id && edge.target !== selectedNode.id
+          !selectedNodeIds.includes(edge.source) &&
+          !selectedNodeIds.includes(edge.target)
       )
     );
-    setSelectedNode(null);
+    setSelectedNode([]); // Clear selection after deletion
   };
 
   const deleteEdge = () => {
-    if (!selectedEdge) return;
-    setEdges((eds) => eds.filter((edge) => edge.id !== selectedEdge.id));
-    setSelectedEdge(null);
+    if (selectedEdge.length === 0) return;
+
+    setEdges((eds) =>
+      eds.filter((edge) => !selectedEdge.some((e) => e.id === edge.id))
+    );
+
+    setSelectedEdge([]); // Clear selection after deletion
   };
 
-  // 🚀 Export Flowchart as JSON
+  //  Export Flowchart as JSON
   const exportFlowchart = () => {
     // Extract only the required properties from nodes
-    const filteredNodes = nodes.map(({ id, data }) => ({ 
-      id, 
-      data: { label: data.label } // Only keep the label inside data
+    const filteredNodes = nodes.map(({ id, data }) => ({
+      id,
+      data: { label: data.label }, // Only keep the label inside data
     }));
     // Extract only the required properties from edges
-    const filteredEdges = edges.map(({ source, target, id }) => ({ source, target, id }));
-  
+    const filteredEdges = edges.map(({ source, target, id }) => ({
+      source,
+      target,
+      id,
+    }));
+
     // Create the JSON structure with filtered nodes and edges
-    const flowchartData = JSON.stringify({ nodes: filteredNodes, edges: filteredEdges }, null, 2);
-  
+    const flowchartData = JSON.stringify(
+      { nodes: filteredNodes, edges: filteredEdges },
+      null,
+      2
+    );
+
     // Export as a JSON file
     const blob = new Blob([flowchartData], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "flowchart.json";
+    link.download = "newFlowchart.json";
     link.click();
   };
-  
 
   // 📥 Import Flowchart from JSON
   const importFlowchart = (event) => {
@@ -381,112 +476,117 @@ const FlowChart = () => {
     event.dataTransfer.dropEffect = "move";
   };
 
+  const duplicateNode = () => {
+    if (!selectedNode || selectedNode.length === 0) return;
+
+    saveState(); // Save state before duplicating
+
+    setNodes((prevNodes) => {
+      const newNodes = selectedNode.map((node) => {
+        const newId = `${node.id}-copy-${Date.now()}`; // Ensure unique ID
+        return {
+          ...node,
+          id: newId,
+          position: {
+            x: node.position.x + 50, // Offset the duplicate slightly
+            y: node.position.y + 50,
+          },
+          data: { ...node.data },
+        };
+      });
+
+      return [...prevNodes, ...newNodes];
+    });
+  };
+
   return (
     <div style={{ display: "flex", width: "100vw", height: "100vh" }}>
-      <Box
-        sx={{
-          width: "20%",
-          p: 2,
-          borderRight: "1px solid gray",
-          bgcolor: "#f5f5f5",
-          overflowY: "auto",
-          "&::-webkit-scrollbar": {
-            width: "8px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "#e0e0e0",
-            borderRadius: "10px",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            background: "#888",
-            borderRadius: "10px",
-            "&:hover": {
-              background: "#555",
-            },
-          },
-        }}
-      >
-        {/* Drag Nodes Section */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: "flex", gap: "10px" }}>
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={exportFlowchart}
-              sx={{ mt: 2, width: "50%" }}
+      <div style={{ flex: 1 }} onDrop={onDrop} onDragOver={onDragOver}>
+        <Paper
+          sx={{
+            p: 2,
+            mb: 2,
+            display: "flex",
+            flexDirection: "row",
+            gap: "10px",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <Box sx={{ display: "flex", gap: "20px" }}>
+              <Button
+                variant="outlined"
+                component="label"
+                color="#ccc"
+                sx={{ width: "50%" }}
+              >
+                <UploadFileIcon />
+                <input
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={importFlowchart}
+                />
+              </Button>
+              <Button
+                variant="outlined"
+                color="#ccc"
+                fullWidth
+                onClick={exportFlowchart}
+                sx={{ width: "50%" }}
+              >
+                <FileDownloadIcon />
+              </Button>
+            </Box>
+            <Box
+              draggable
+              onDragStart={(e) => onDragStart(e, "rectangle")}
+              onClick={(e) => addNode(e)}
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "center",
+                width: "150px",
+                height: "40px",
+                border: "1.5px solid #ccc",
+                borderRadius: "4px",
+              }}
             >
-              Export JSON
-            </Button>
-
-            <Button
-              variant="contained"
-              component="label"
-              sx={{ mt: 2, width: "50%" }}
+              <Typography variant="h6" sx={{ pt: "4px" }}>
+                Add Nodes
+              </Typography>
+            </Box>
+          </Box>
+          <Button onClick={undo} disabled={history.length === 0}>
+            Undo
+          </Button>
+          <Button onClick={redo} disabled={redoStack.length === 0}>
+            Redo
+          </Button>
+          {selectedEdge.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                alignItems: "center",
+                mt: "5px",
+              }}
             >
-              Import JSON
-              <input
-                type="file"
-                accept="application/json"
-                hidden
-                onChange={importFlowchart}
-              />
-            </Button>
-          </Box>
-        </Paper>
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Box
-            draggable
-            onDragStart={(e) => onDragStart(e, "rectangle")}
-            onClick={addNode} 
-            sx={{ display: "flex", gap: 2, justifyContent: "center" }}
-          >
-            <Typography variant="h6">Add Nodes</Typography>
-          </Box>
-        </Paper>
-
-        {/* Edit Node Section */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6">Edit Node</Typography>
-          <TextField
-            label="Label"
-            fullWidth
-            variant="outlined"
-            size="small"
-            value={nodeLabel}
-            onChange={(e) => setNodeLabel(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2">Color:</Typography>
-            <input
-              type="color"
-              value={nodeColor}
-              onChange={(e) => setNodeColor(e.target.value)}
-            />
-          </Box>
-          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-            <Button variant="contained" onClick={applyNodeChanges}>
-              Apply
-            </Button>
-            <Button variant="outlined" color="error" onClick={deleteNode}>
-              Delete
-            </Button>
-          </Box>
-        </Paper>
-
-        {/* Edit Link Section */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6">Edit Link</Typography>
-          <TextField
-            label="Label"
-            fullWidth
-            variant="outlined"
-            size="small"
-            value={edgeLabel}
-            onChange={(e) => setEdgeLabel(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-          {/* <FormControlLabel
+              <FormControl size="small">
+                <Typography variant="h6" sx={{ textAlign: "left", mb: "8px" }}>
+                  Edit Link Label:
+                </Typography>
+                <TextField
+                  label="Label"
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  value={edgeLabel}
+                  onChange={handleEdgeLabelChange}
+                  sx={{ mt: "0px" }}
+                />
+              </FormControl>
+              {/* <FormControlLabel
             control={
               <Checkbox
                 checked={edgeAnimated}
@@ -496,28 +596,220 @@ const FlowChart = () => {
             label="Animated"
             sx={{ mt: 2 }}
           /> */}
-          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-            <Button variant="contained" onClick={applyEdgeChanges}>
-              Apply
-            </Button>
-            <Button variant="outlined" color="error" onClick={deleteEdge}>
-              Delete
-            </Button>
-          </Box>
+              <FormControl size="small">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={deleteEdge}
+                  style={{
+                    width: "35px",
+                    height: "35px",
+                    cursor: "pointer",
+                    marginTop: "43px",
+                  }}
+                >
+                  <Delete />
+                </Button>
+              </FormControl>
+            </Box>
+          )}
+          {selectedNode.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                alignItems: "center",
+                mt: "5px",
+              }}
+            >
+              <FormControl size="small">
+                <Typography variant="h6" sx={{ textAlign: "left", mb: "8px" }}>
+                  Edit Node Label:
+                </Typography>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  value={nodeLabel}
+                  onChange={(e) => {
+                    // const newValue = e.target.value;
+                    // setNodeLabel(newValue); // Update UI instantly
+                    handleNodeStyleChange("label", e.target.value);
+                  }}
+                  placeholder="Enter label"
+                />
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton>
+                  <FontDownloadIcon />
+                </IconButton>
+                <Select
+                  value={nodeFontStyle.fontFamily || "Arial"}
+                  onChange={(e) =>
+                    handleNodeStyleChange("fontFamily", e.target.value)
+                  }
+                  sx={{ width: "80px" }}
+                >
+                  {["Arial", "Verdana", "Times New Roman", "Courier New"].map(
+                    (font) => (
+                      <MenuItem key={font} value={font}>
+                        {font}
+                      </MenuItem>
+                    )
+                  )}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton>
+                  <FormatSize />
+                </IconButton>
+                <Select
+                  value={nodeFontStyle.fontSize || "16px"}
+                  onChange={(e) =>
+                    handleNodeStyleChange("fontSize", e.target.value)
+                  }
+                  sx={{ width: "80px" }}
+                >
+                  {["12px", "14px", "16px", "18px", "20px", "24px"].map(
+                    (size) => (
+                      <MenuItem key={size} value={size}>
+                        {size}
+                      </MenuItem>
+                    )
+                  )}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton>
+                  <FormatBold />
+                </IconButton>
+                <Select
+                  value={nodeFontStyle.fontWeight || "400"}
+                  onChange={(e) =>
+                    handleNodeStyleChange("fontWeight", e.target.value)
+                  }
+                >
+                  {[
+                    "100",
+                    "200",
+                    "300",
+                    "400",
+                    "500",
+                    "600",
+                    "700",
+                    "800",
+                    "900",
+                  ].map((weight) => (
+                    <MenuItem key={weight} value={weight}>
+                      {weight}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton>
+                  <FormatItalic />
+                </IconButton>
+                <Select
+                  value={nodeFontStyle.fontStyle}
+                  onChange={(e) =>
+                    handleNodeStyleChange("fontStyle", e.target.value)
+                  }
+                  sx={{ width: "70px" }}
+                >
+                  {["normal", "italic"].map((style) => (
+                    <MenuItem key={style} value={style}>
+                      {style}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton sx={{ p: "8px 0px" }}>
+                  <FormatColorTextIcon />
+                </IconButton>
+                <input
+                  type="color"
+                  value={nodeFontStyle.fontColor || "#000000"}
+                  onChange={(e) =>
+                    handleNodeStyleChange("fontColor", e.target.value)
+                  }
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                />
+              </FormControl>
+
+              <FormControl size="small">
+                <IconButton sx={{ p: "8px 0px" }}>
+                  <FormatColorFillIcon />
+                </IconButton>
+                <input
+                  type="color"
+                  value={nodeFontStyle.bgColor || "#ffffff"}
+                  onChange={(e) =>
+                    handleNodeStyleChange("bgColor", e.target.value)
+                  }
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                />
+              </FormControl>
+
+              <FormControl size="small">
+                <Button
+                  variant="outlined"
+                  color="color"
+                  onClick={duplicateNode}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    cursor: "pointer",
+                    marginTop: "40px",
+                  }}
+                >
+                  <ContentCopyIcon />
+                </Button>
+              </FormControl>
+
+              <FormControl size="small">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={deleteNode}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    cursor: "pointer",
+                    marginTop: "40px",
+                  }}
+                >
+                  <Delete />
+                </Button>
+              </FormControl>
+            </Box>
+          )}
         </Paper>
-
-        {/* Export & Import Section */}
-      </Box>
-
-      <div style={{ flex: 1 }} onDrop={onDrop} onDragOver={onDragOver}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          onNodesChange={onNodesChangeWithHistory}
+          onEdgesChange={onEdgesChangeWithHistory}
           onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
+          onPaneClick={onPaneClick}
           fitView
           nodeTypes={nodeTypes}
         >
